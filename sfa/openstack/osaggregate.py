@@ -169,7 +169,7 @@ class OSAggregate:
 
         # Update connection for the current user
         xrn = Xrn(urns[0], type='slice')
-        if options['actual_caller_hrn']:
+        if options.get('actual_caller_hrn'):
             if options['actual_caller_hrn'] is (xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]):
                 user_name = options['actual_caller_hrn']
             else:
