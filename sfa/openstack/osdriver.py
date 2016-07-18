@@ -1,3 +1,12 @@
+######################################################################################################
+# Edited on Jun 20, 2015                                                                             #
+# Code modified by Chaima Ghribi.                                                                    #
+# The original code is available on github at https://github.com/onelab-eu/sfa/tree/openstack-driver.#
+# Modifications are noted as comments in the code itself.                                            #
+# @contact: chaima.ghribi@it-sudparis.eu                                                             #
+# @organization: Institut Mines-Telecom - Telecom SudParis                                           #
+######################################################################################################
+
 import time
 import datetime
 
@@ -155,12 +164,17 @@ class OpenstackDriver(Driver):
         # Add suitable roles to the user
         admin_role = self.shell.auth_manager.roles.find(name='admin')
         member_role = self.shell.auth_manager.roles.find(name='_member_')
+        heatstackowner_role = self.shell.auth_manager.roles.find(name='heat_stack_owner')
         if len(researchers):
             for researcher in researchers:
                 researcher_name = OSXrn(xrn=researcher, type='user').get_hrn()
                 user = self.shell.auth_manager.users.find(name=researcher_name)
                 if self.shell.auth_manager.roles.roles_for_user(user, tenant).count(member_role) == 0:
                     self.shell.auth_manager.roles.add_user_role(user, member_role, tenant)
+                    logger.info("Member role is allocated to tenant(%s)" % tenant)
+                if self.shell.auth_manager.roles.roles_for_user(user, tenant).count(heatstackowner_role) == 0:
+                    self.shell.auth_manager.roles.add_user_role(user, heatstackowner_role, tenant)
+                    logger.info("Heatstackowner role is allocated to tenant(%s)" % heatstackowner_role)
         elif pi:
             pi_name = OSXrn(xrn=pi, type='user').get_hrn()
             user = self.shell.auth_manager.users.find(name=pi_name)
@@ -214,10 +228,15 @@ class OpenstackDriver(Driver):
                                      tenant_id=tenant.id, email=email, enabled=True)
 
         # Check if the user has roles or not 
-        member_role = self.shell.auth_manager.roles.find(name='Member')
+        member_role = self.shell.auth_manager.roles.find(name='_member_')
         if self.shell.auth_manager.roles.roles_for_user(user, tenant).count(member_role) == 0:
             self.shell.auth_manager.roles.add_user_role(user, member_role, tenant)
-        
+            logger.info("Checking member role of tenant(%s)" % tenant)
+        heatstackowner_role = self.shell.auth_manager.roles.find(name='heat_stack_owner')
+        if self.shell.auth_manager.roles.roles_for_user(user, tenant).count(heatstackowner_role) == 0:        
+            self.shell.auth_manager.roles.add_user_role(user, heatstackowner_role, tenant)
+            logger.info("Checking heatstackowner role of tenant(%s)" % heatstackowner_role)
+
         # Check if keys exist or not
         if keys is not None: 
             # Check if the user has keys or not
@@ -226,7 +245,6 @@ class OpenstackDriver(Driver):
             else:
                 key = keys[0]
             keyname = OSXrn(xrn=user_hrn, type='user').get_slicename()
-
             # Update connection for the current client 
             self.shell.compute_manager.connect(username=user.name, tenant=tenant.name, password=user_hrn)
             keypair_list = self.shell.compute_manager.keypairs.list()
@@ -457,14 +475,13 @@ class OpenstackDriver(Driver):
     def status (self, urns, options=None):
         if options is None: options={}
         aggregate = OSAggregate(self)
-  
-        # TODO: Change to more dynamic
         version_manager = VersionManager()
-        version_dict = {'type':'KOREN', 'version':'1', 'content_type':'manifest'}
+        version_dict = {'type':'KOREN', 'version':'2', 'content_type':'manifest'}
         version = version_manager.get_version(version_dict)
         desc = aggregate.describe(urns, version=version, options=options)
-        status = {'geni_urn': desc['geni_urn'],
-                  'geni_slivers': desc['geni_slivers']}
+        status = {'geni_urn': desc.get('geni_urn'),
+                  'geni_rspec': desc.get('geni_rspec')}
+#                  'geni_slivers': desc['geni_slivers']}
         return status
 
     def secgroups_with_rules(self, rspec_groups):
@@ -474,6 +491,7 @@ class OpenstackDriver(Driver):
             try:
                 # Check if the security group exists
                 group = self.shell.compute_manager.security_groups.find(name=rspec_group_name)
+                logger.info(group)
                 # Check if the security rules of the group exist 
                 rspec_rules = rspec_group.get('rules')
                 if rspec_rules:
@@ -482,8 +500,8 @@ class OpenstackDriver(Driver):
                         for ori_rule in ori_rules:
                             if (rspec_rule.get('ip_protocol') == str(ori_rule.get('ip_protocol'))) and \
                                (rspec_rule.get('from_port') == str(ori_rule.get('from_port'))) and \
-                               (rspec_rule.get('to_port') == str(ori_rule.get('to_port'))) and \
-                               (rspec_rule.get('ip_range') == str(ori_rule.get('ip_range'))):
+                               (rspec_rule.get('to_port') == str(ori_rule.get('to_port'))): #and \
+                               #(rspec_rule.get('ip_range') == str(ori_rule.get('ip_range'))):
                                 break
                         else:
                             # New security rules of the group
@@ -505,10 +523,11 @@ class OpenstackDriver(Driver):
                                 to_port = -1
                             else:    
                                 to_port = int(rspec_rule.get('to_port'))
-                            if (rspec_rule.get('ip_range') is '{}') or (rspec_rule.get('ip_range') is 'none'):
+                            if (rspec_rule.get('ip_range') == '{}') or (rspec_rule.get('ip_range') is 'none') or (rspec_rule.get('ip_range')=={}):
                                 cidr = None
                             else:
                                 cidr = rspec_rule.get('ip_range')
+                            logger.info("ip_protocol = %s, from_port = %s, to_port = %s, cidr = %s" % (ip_protocol, from_port, to_port, cidr))
                             self.shell.compute_manager.security_group_rules.create(parent_group_id, \
                                                                             ip_protocol, from_port, to_port, cidr)
                     group = self.shell.compute_manager.security_groups.find(id=group.id)
@@ -555,52 +574,67 @@ class OpenstackDriver(Driver):
         return sec_groups
 
     def allocate (self, urn, rspec_string, expiration, options=None):
+        logger.info(rspec_string)
         if options is None: options={}
         aggregate = OSAggregate(self)
-        rspec = RSpec(rspec_string)
+        version_dict = {'type':'KOREN', 'version':'2', 'content_type':'request'}
+        rspec = RSpec(rspec_string, version_dict)
+#        rspec = RSpec(rspec_string)
         xrn = Xrn(urn)
         slice_hrn = xrn.get_hrn()
         tenant_name = OSXrn(xrn=slice_hrn, type='slice').get_hrn()
-        instance_name = hrn_to_os_slicename(slice_hrn)
+        # Check if the slice related with tenant or project exists
         tenants = self.shell.auth_manager.tenants.findall()
-        # collect public keys & get the user name
+        # Collect public keys & Get the user name
         users = options.get('geni_users', [])
         pubkeys = []
         key_name = None
 
         if len(users) >= 1:
+            # The present of status is supported one by one.
             for user in users:
-                # TODO: We currently support one user name.
-                user_name = Xrn(user.get('urn')).get_hrn()
-                pubkeys.extend(user['keys'])
+                if options.get('actual_caller_hrn'):
+                    if options.get('actual_caller_hrn') is Xrn(user.get('urn')).get_hrn():
+                        user_name = options.get('actual_caller_hrn')
+                    else:
+                        user_name = Xrn(user.get('urn')).get_hrn()
+                else:
+                    user_name = Xrn(user.get('urn')).get_hrn()
+                if 'keys' in user and len(user['keys'])>0:
+                    user_key = user['keys'][0]
+                    pubkeys.extend(user['keys'])
+                else:
+                    user_key = None
+                user_email = user.get('email', None)
             for tenant in tenants:
-                # Check if the tenant of the user exists in local OS or not
+                # Check if the tenant of the user exists in local OS
                 if tenant_name == tenant.name:
                     try:
-                        self.shell.auth_manager.users.find(name=user_name)
+                         self.shell.auth_manager.users.find(name=user_name)
                     except:
                         user = self.register_federation(user_hrn=user_name, \
-                                    slice_hrn=tenant_name, keys=pubkeys, email=None)
+                                    slice_hrn=tenant_name, keys=pubkeys, email=user_email)
                     break
-            else:
-                user = self.register_federation(user_hrn=user_name, \
-                            slice_hrn=tenant_name, keys=None, email=None)
-            
-            # Update connection for the current client
-            self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
-            keypair_list = self.shell.compute_manager.keypairs.list()
-            keyname = OSXrn(xrn=user_name, type='user').get_slicename()
-            for keypair in keypair_list:
-                if keyname == keypair.name:
-                    key_name = keypair.name
-                    break
-            else:
-                raise SfaNotImplemented("No handle!")
-            
+                else:
+                     if not pubkeys: pubkeys = None
+                     user = self.register_federation(user_hrn=user_name, \
+                                 slice_hrn=tenant_name, keys=pubkeys, email=user_email)
+
+                # Update connection for the current client
+                self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
+                keypair_list = self.shell.compute_manager.keypairs.list()
+                keyname = OSXrn(xrn=user_name, type='user').get_slicename()
+                for keypair in keypair_list:
+                    if keyname == keypair.name:
+                        key_name = keypair.name
+                        break
+                else:
+                    raise SfaNotImplemented("No handle!")
+
             # Update initial connection info
             self.init_compute_manager_conn()
 #            key_name = aggregate.create_instance_key(slice_hrn, users[0])
-
+    
         # In case of federation or non-options
         elif len(users) < 1:
             if options.get('actual_caller_hrn') is None:
@@ -608,34 +642,36 @@ class OpenstackDriver(Driver):
             else:
                 user_name = options.get('actual_caller_hrn')
             for tenant in tenants:
-                # Check if the tenant of the user in local OS or not
+                # Check if the tenant of the user in local OS
                 if tenant_name == tenant.name:
                     try:
                         self.shell.auth_manager.users.find(name=user_name)
                     except:
                         user = self.register_federation(user_hrn=user_name, \
-                                    slice_hrn=tenant_name, keys=pubkeys, email=None)
+                                    slice_hrn=tenant_name, keys=pubkeys, email=user_email)
                     break
             else:
+                if not pubkeys: pubkeys = None
                 user = self.register_federation(user_hrn=user_name, \
-                            slice_hrn=tenant_name, keys=None, email=None)
-            # TODO: Wrapper for federation needs at least one pubkey of the user extracted by 'options'!!
-#            name = OSXrn(xrn=user_name, type='user').get_slicename()
-#            key_name = self.shell.compute_manager.keypairs.get(name).name
-
+                            slice_hrn=tenant_name, keys=pubkeys, email=user_email)
         else:
             raise SfaNotImplemented("No handle!")
 
-        slivers = aggregate.run_instances(tenant_name, user_name, rspec_string, key_name, pubkeys)
-        # Update sliver allocations
-        for sliver in slivers:
-            component_id = sliver.metadata.get('component_id')
-            sliver_id = OSXrn(name=('koren'+'.'+ sliver.name), id=sliver.id, type='node+openstack').get_urn()
-            record = SliverAllocation( sliver_id=sliver_id,
-                                       component_id=component_id,
-                                       allocation_state='geni_allocated')
+        stacks = aggregate.run_instances(tenant_name, user_name, rspec_string, key_name, pubkeys)
+        # Update stack allocations
+        for stack in stacks:
+            if hasattr(stack, 'metadata'):
+                component_id = stack.metadata.get('component_id')
+            elif hasattr(stack, 'description'):
+                component_id = stack.description.get('component_id')
+            elif hasattr(stack, 'template_description'):
+                component_id = stack.template_description.get('component_id')
+            else:
+                component_id = 'urn:publicid:IDN+' + self.api.hrn + '+node+openstack'
+            stack_id = OSXrn(name=(self.api.hrn+'.'+ stack.stack_name), id=stack.id, type='node+openstack').get_urn()
+            record = SliverAllocation( sliver_id=stack_id, component_id=component_id, allocation_state='geni_allocated')
             record.sync(self.api.dbsession())
-        return aggregate.describe(urns=[urn], version=rspec.version)
+        return aggregate.describe(urns=[urn], version=rspec.version, options=options)
 
     def provision(self, urns, options=None):
         if options is None: options={}
@@ -644,23 +680,50 @@ class OpenstackDriver(Driver):
 
         # Update connection for the current client
         xrn = Xrn(urns[0], type='slice')
-        user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+        if options.get('actual_caller_hrn'):
+            if options.get('actual_caller_hrn') is (xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]):
+                user_name = options.get('actual_caller_hrn')
+            else:
+                user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+        else:
+            user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+#        if options.get('actual_caller_hrn') is None:
+#            user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+#        else:    
+#            user_name = options.get('actual_caller_hrn')
         tenant_name = OSXrn(xrn=urns[0], type='slice').get_hrn() 
-        self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
-        
-        instances = aggregate.get_instances(xrn)
-        # Allocate new floating IP per the instance
-        servers = aggregate.check_floatingip(instances, True)
-        aggregate.create_floatingip(tenant_name, servers)
+        self.shell.orchest_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
+        stacks = aggregate.get_instances(xrn)
 
-        sliver_ids=[]
-        for instance in instances:
-            sliver_id = OSXrn(name=('koren'+'.'+ instance.name), id=instance.id, type='node+openstack').get_urn()
-            sliver_ids.append(sliver_id)
+        # Allocate new floating IP per the instance(VM)
+        self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
+        vms = self.shell.compute_manager.servers.list()
+        servers = aggregate.check_floatingip(vms, True)
+        aggregate.create_floatingip(tenant_name, servers)
+      
+        # Add rules to security group to open SSH and PING
+        # Allow ping
+        aggregate.add_rule_to_security_group('default',
+                  protocol = "icmp",      
+                  cidr_ip = "0.0.0.0/0",  
+                  icmp_type_code = "-1:-1")
+        # Allow ssh
+        aggregate.add_rule_to_security_group('default',
+                  protocol = "tcp",      
+                  cidr_ip = "0.0.0.0/0",  
+                  icmp_type_code = "22:22")
+
+        stack_ids=[]
+        for stack in stacks:
+            stack_id = OSXrn(name=(self.api.hrn+'.'+ stack.stack_name), id=stack.id, type='node+openstack').get_urn()
+            stack_ids.append(stack_id)
         dbsession=self.api.dbsession()
-        SliverAllocation.set_allocations(sliver_ids, 'geni_provisioned', dbsession)
+        SliverAllocation.set_allocations(stack_ids, 'geni_provisioned', dbsession)
         version_manager = VersionManager()
-        rspec_version = version_manager.get_version(options['geni_rspec_version'])
+        if type(options.get('geni_rspec_version')) is dict:
+            rspec_version = version_manager.get_version(options['geni_rspec_version'])
+        else:
+            rspec_version = version_manager._get_version('KOREN', '2', 'manifest')
         return self.describe(urns, rspec_version, options=options)
 
     def delete(self, urns, options=None):
@@ -669,45 +732,47 @@ class OpenstackDriver(Driver):
 
         # Update connection for the current client
         xrn = Xrn(urns[0], type='slice')
-        user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+        if options.get('actual_caller_hrn'):
+            if options.get('actual_caller_hrn') is (xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]):
+               user_name = options.get('actual_caller_hrn')
+            else:
+               user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+        else:
+            user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]  
         tenant_name = OSXrn(xrn=urns[0], type='slice').get_hrn()
-        self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
-
+        self.shell.orchest_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
+        logger.info("[Delete] Connection: user=%s, tenant=%s" % (user_name, tenant_name))
+      
         # collect sliver ids so we can update sliver allocation states after
         # we remove the slivers.
-        instances = aggregate.get_instances(xrn)
+        stacks = aggregate.get_instances(xrn)
+
         # Release the floating IPs of instances
-        servers = aggregate.check_floatingip(instances, False)
+        self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
+        vms = self.shell.compute_manager.servers.list()
+        servers = aggregate.check_floatingip(vms, False)
         aggregate.delete_floatingip(servers)
 
-        sliver_ids = []
-        id_set = set()
-        for instance in instances:
-            sliver_id = OSXrn(name=('koren'+'.'+ instance.name), id=instance.id, type='node+openstack').get_urn()
-            sliver_ids.append(sliver_id)
-            # delete the instance related with requested tenant
-            aggregate.delete_instance(instance)
-            id_set.add(instance.tenant_id)       
-
-        tenant_ids = list(id_set)
-        for tenant_id in tenant_ids:
-            # Delete both the router(s) and interfaces related with requested tenant
-            aggregate.delete_router(tenant_id=tenant_id)
-            # Delete both the network and subnet related with requested tenant
-            aggregate.delete_network(tenant_id=tenant_id)
+        stack_ids=[]
+        for stack in stacks:
+            stack_id = OSXrn(name=(self.api.hrn+'.'+ stack.stack_name), id=stack.id, \
+                                    type='node+openstack').get_urn()
+            stack_ids.append(stack_id)
+            # delete the stack related with allocated resources
+            aggregate.delete_instance(stack)
 
         # Delete sliver allocation states
         dbsession=self.api.dbsession()
-        SliverAllocation.delete_allocations(sliver_ids, dbsession)
+        SliverAllocation.delete_allocations(stack_ids, dbsession)
 
         # Return geni_slivers
         geni_slivers = []
-        for sliver_id in sliver_ids:
+        for stack_id in stack_ids:
             geni_slivers.append(
-                { 'geni_sliver_urn': sliver_id,
+                { 'geni_node_urn': stack_id,
                   'geni_allocation_status': 'geni_unallocated',
-#                  'geni_expires': datetime_to_string(utcparse(time.time())) })
-                  'geni_expires': None })
+                  'geni_expires': datetime_to_string(utcparse(time.time())) })
+        print 'geni_slivers :' + str(geni_slivers)
         return geni_slivers
 
     def renew (self, urns, expiration_time, options=None):
@@ -754,11 +819,16 @@ class OpenstackDriver(Driver):
         # Update connection for the current client
         xrn = Xrn(urn)
         osxrn = OSXrn(xrn=urn, type='slice')
-        user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
         tenant_name = osxrn.get_hrn()
+        tenant = self.shell.auth_manager.tenants.find(name=tenant_name)
+        user_name = tenant.description
+        if user_name is None:
+            user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
+        tenant_info = self.shell.auth_manager.tenants.find(name=tenant_name)
         self.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
 
         instances = self.shell.compute_manager.servers.findall(name=osxrn.get_slicename())
         for instance in instances:
             self.shell.compute_manager.servers.shutdown(instance.id)
         return True
+

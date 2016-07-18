@@ -107,7 +107,7 @@ class SliceManager:
         if Callids().already_handled(call_id): return ""
 
         version_manager = VersionManager()
-
+        
         def _ListResources(aggregate, server, credential, options):
             forward_options = copy(options)
             tStart = time.time()
@@ -158,7 +158,6 @@ class SliceManager:
             interface = api.aggregates[aggregate]
             server = api.server_proxy(interface, cred)
             multiclient.run(_ListResources, aggregate, server, [cred], options)
-    
     
         results = multiclient.get_results()
         rspec_version = version_manager.get_version(options.get('geni_rspec_version'))
@@ -212,7 +211,9 @@ class SliceManager:
         # Validate the RSpec against PlanetLab's schema --disabled for now
         # The schema used here needs to aggregate the PL and VINI schemas
         # schema = "/var/www/html/schemas/pl.rng"
-        rspec = RSpec(rspec_str)
+        request_version = version_manager._get_version('KOREN', '2', 'request')        
+        rspec = RSpec(rspec=rspec_str, version=request_version)
+#        rspec = RSpec(rspec_str)
     #    schema = None
     #    if schema:
     #        rspec.validate(schema)
@@ -242,26 +243,27 @@ class SliceManager:
             multiclient.run(_Allocate, aggregate, server, xrn, [cred], rspec.toxml(), options)
                 
         results = multiclient.get_results()
-        manifest_version = version_manager._get_version(rspec.version.type, rspec.version.version, 'manifest')
+#        manifest_version = version_manager._get_version(rspec.version.type, rspec.version.version, 'manifest')
+        manifest_version = version_manager._get_version('KOREN', '2', 'manifest')
         result_rspec = RSpec(version=manifest_version)
         geni_urn = None
-        geni_slivers = []
+#        geni_slivers = []
 
         for result in results:
             self.add_slicemgr_stat(result_rspec, "Allocate", result["aggregate"], result["elapsed"], 
                                    result["status"], result.get("exc_info",None))
             if result["status"]=="success":
                 try:
-                    res = result['result']['value']
-                    geni_urn = res['geni_urn']
+                    res = result.get('result').get('value')
+                    geni_urn = res.get('geni_urn')
                     result_rspec.version.merge(ReturnValue.get_value(res['geni_rspec']))
-                    geni_slivers.extend(res['geni_slivers'])
+#                    geni_slivers.extend(res.get('geni_slivers'))
                 except:
                     api.logger.log_exc("SM.Allocate: Failed to merge aggregate rspec")
         return {
             'geni_urn': geni_urn,
             'geni_rspec': result_rspec.toxml(),
-            'geni_slivers': geni_slivers
+#            'geni_slivers': geni_slivers
         }
 
 
@@ -303,26 +305,26 @@ class SliceManager:
 
         results = multiclient.get_results()
         # Set the manifest of KOREN
-        manifest_version = version_manager._get_version('KOREN', '1', 'manifest')
+        manifest_version = version_manager._get_version('KOREN', '2', 'manifest')
 #        manifest_version = version_manager._get_version('GENI', '3', 'manifest')
         result_rspec = RSpec(version=manifest_version)
-        geni_slivers = []
+#        geni_slivers = []
         geni_urn  = None  
         for result in results:
             self.add_slicemgr_stat(result_rspec, "Provision", result["aggregate"], result["elapsed"],
                                    result["status"], result.get("exc_info",None))
             if result["status"]=="success":
                 try:
-                    res = result['result']['value']
-                    geni_urn = res['geni_urn']
-                    result_rspec.version.merge(ReturnValue.get_value(res['geni_rspec']))
-                    geni_slivers.extend(res['geni_slivers'])
+                    res = result.get('result').get('value')
+                    geni_urn = res.get('geni_urn')
+                    result_rspec.version.merge(ReturnValue.get_value(res.get('geni_rspec')))
+#                    geni_slivers.extend(res.get('geni_slivers'))
                 except:
                     api.logger.log_exc("SM.Provision: Failed to merge aggregate rspec")
         return {
             'geni_urn': geni_urn,
             'geni_rspec': result_rspec.toxml(),
-            'geni_slivers': geni_slivers
+#            'geni_slivers': geni_slivers
         }            
 
 

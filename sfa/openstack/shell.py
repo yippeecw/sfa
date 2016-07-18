@@ -5,10 +5,14 @@ import gettext
 from urlparse import urlparse
 from sfa.util.sfalogging import logger
 from sfa.util.config import Config
+from sfa.util.faults import SfaNotImplemented
+
 try:
-    from sfa.openstack.client import NovaClient, KeystoneClient, NeutronClient
+    from sfa.openstack.client import NovaClient, KeystoneClient, NeutronClient, HeatClient
     has_osclients = True
 except:
+    logger.error("Please check import of python clients for openstack in sfa/openstack/client.py")
+    logger.error("Or install python clients for openstack")
     has_osclients = False
 
 class Shell:
@@ -28,6 +32,7 @@ class Shell:
             self.auth_manager = KeystoneClient(config=config)
             self.compute_manager = NovaClient(config=config)
             self.network_manager = NeutronClient(config=config)
+            self.orchest_manager = HeatClient(config=config)
         else:
             logger.debug('OpenStack Access - REST')
             raise SfaNotImplemented('OpenStack Access - REST')

@@ -370,18 +370,19 @@ class AggregateCommands(Commands):
         """Retrieve the status of the slivers belonging to the named slice (Status)"""
         urns = [Xrn(xrn, 'slice').get_urn()]
         status = self.api.manager.Status(self.api, urns, [], {})
-        pprinter.pprint(status)
+        print status.get('geni_rspec')
+#        pprinter.pprint(status)
  
-    @add_options('-r', '--rspec-version', dest='rspec_version', metavar='<rspec_version>', 
-                 default='KOREN', help='version/format of the resulting rspec response')  
-    def resources(self, rspec_version='KOREN'):
-        """Display the available resources at an aggregate"""  
-        options = {'geni_rspec_version': rspec_version}
+    @add_options('-t', '--rspec_type', dest='rspec_type', metavar='<rspec_type>', help='rspec type', default='KOREN')
+    @add_options('-v', '--rspec_version', dest='rspec_version', metavar='<rspec_version>', help='rspec version', default=2)
+    def resources(self, rspec_type, rspec_version):
+        """Display the available resources at an aggregate""" 
+        rspec_terms = {'type': str(rspec_type), 'version': int(rspec_version)}
+        options = {'geni_rspec_version': rspec_terms}
         print options
         resources = self.api.manager.ListResources(self.api, [], options)
         print resources
         
-
     @add_options('-x', '--xrn', dest='xrn', metavar='<xrn>', help='slice hrn/urn (mandatory)')
     @add_options('-r', '--rspec', dest='rspec', metavar='<rspec>', help='rspec file (mandatory)')
     def allocate(self, xrn, rspec):
@@ -392,8 +393,8 @@ class AggregateCommands(Commands):
         options={}
         expiration = None
         manifest = self.api.manager.Allocate(self.api, slice_urn, [], rspec_string, expiration, options)
-        print manifest
-
+        print manifest.get('geni_rspec')        
+#        print manifest
 
     @add_options('-x', '--xrn', dest='xrn', metavar='<xrn>', help='slice hrn/urn (mandatory)')
     def provision(self, xrn):
@@ -402,16 +403,13 @@ class AggregateCommands(Commands):
         slice_urn=xrn.get_urn()
         options = {'geni_rspec_version': 'KOREN'}
         manifest = self.api.manager.Provision(self.api, [slice_urn], [], options)
-        print manifest
-
-
+        print manifest.get('geni_rspec')
+#        print manifest
 
     @add_options('-x', '--xrn', dest='xrn', metavar='<xrn>', help='slice hrn/urn (mandatory)')
     def delete(self, xrn):
         """Delete slivers""" 
         self.api.manager.Delete(self.api, [xrn], [], {})
- 
-
 
 
 class SliceManagerCommands(AggregateCommands):

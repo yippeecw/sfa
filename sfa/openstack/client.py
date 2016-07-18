@@ -1,8 +1,12 @@
-from sfa.util.sfalogging import logger
-from keystoneclient.v2_0 import client as keystone_client
-from novaclient.v1_1 import client as nova_client
 from sfa.util.config import Config
-from neutronclient.v2_0 import client as neutron_client
+try:
+    from keystoneclient.v2_0 import client as keystone_client
+    from novaclient.v2 import client as nova_client
+    from neutronclient.v2_0 import client as neutron_client
+    from heatclient.v1 import client as heat_client
+except:
+    from sfa.util.faults import SfaNotImplemented
+    raise SfaNotImplemented('OpenStack Import')
 
 def parse_accrc(filename):
     opts = {}
@@ -25,19 +29,11 @@ class KeystoneClient:
         if not config:
             config = Config()
         opts = parse_accrc(config.SFA_NOVA_NOVARC)
-        if username:
-            opts['OS_USERNAME'] = username
-        if password:
-            opts['OS_PASSWORD'] = password
-        if tenant:
-            opts['OS_TENANT_NAME'] = tenant
-        if url:
-            opts['OS_AUTH_URL'] = url
-        self.opts = opts 
-        self.client = keystone_client.Client(username=opts.get('OS_USERNAME'),
-                                             password=opts.get('OS_PASSWORD'),
-                                             tenant_name=opts.get('OS_TENANT_NAME'),
-                                             auth_url=opts.get('OS_AUTH_URL'))
+        if not username: username=opts['OS_USERNAME']
+        if not password: password=opts['OS_PASSWORD']
+        if not tenant:   tenant=opts['OS_TENANT_NAME']
+        if not url:      url=opts['OS_AUTH_URL']
+        self.client = keystone_client.Client(username=username, password=password, tenant_name=tenant, auth_url=url)
 
     def connect(self, *args, **kwds):
         self.__init__(*args, **kwds)
@@ -50,19 +46,11 @@ class NovaClient:
         if not config:
             config = Config()
         opts = parse_accrc(config.SFA_NOVA_NOVARC)
-        if username:
-            opts['OS_USERNAME'] = username
-        if password:
-            opts['OS_PASSWORD'] = password
-        if tenant:
-            opts['OS_TENANT_NAME'] = tenant
-        if url:
-            opts['OS_AUTH_URL'] = url
-        self.opts = opts
-        self.client = nova_client.Client(username=opts.get('OS_USERNAME'),
-                                         api_key=opts.get('OS_PASSWORD'),
-                                         project_id=opts.get('OS_TENANT_NAME'),
-                                         auth_url=opts.get('OS_AUTH_URL'),
+        if not username: username=opts['OS_USERNAME']
+        if not password: password=opts['OS_PASSWORD']
+        if not tenant:   tenant=opts['OS_TENANT_NAME']
+        if not url:      url=opts['OS_AUTH_URL']
+        self.client = nova_client.Client(username=username, api_key=password, project_id=tenant, auth_url=url,
                                          region_name='',
                                          extensions=[],
                                          service_type='compute',
@@ -80,22 +68,33 @@ class NeutronClient:
         if not config:
             config = Config()
         opts = parse_accrc(config.SFA_NOVA_NOVARC)
-        if username:
-            opts['OS_USERNAME'] = username
-        if password:
-            opts['OS_PASSWORD'] = password
-        if tenant:
-            opts['OS_TENANT_NAME'] = tenant
-        if url:
-            opts['OS_AUTH_URL'] = url 
-        self.opts = opts
-        self.client = neutron_client.Client(username=opts.get('OS_USERNAME'),
-                                            password=opts.get('OS_PASSWORD'),
-                                            tenant_name=opts.get('OS_TENANT_NAME'),
-                                            auth_url=opts.get('OS_AUTH_URL'))
+        if not username: username=opts['OS_USERNAME']
+        if not password: password=opts['OS_PASSWORD']
+        if not tenant:   tenant=opts['OS_TENANT_NAME']
+        if not url:      url=opts['OS_AUTH_URL']
+        self.client = neutron_client.Client(username=username, password=password, tenant_name=tenant, auth_url=url)
 
     def connect(self, *args, **kwds):
         self.__init__(*args, **kwds)
 
     def __getattr__(self, name):
-        return getattr(self.client, name)    
+        return getattr(self.client, name)
+
+class HeatClient:
+    def __init__(self, username=None, password=None, tenant=None, url=None, config=None):
+        if not config:
+            config = Config()
+        opts = parse_accrc(config.SFA_NOVA_NOVARC)
+        if not username: username=opts['OS_USERNAME']
+        if not password: password=opts['OS_PASSWORD']
+        if not tenant:   tenant=opts['OS_TENANT_NAME']
+        if not url:      url=opts['OS_AUTH_URL']
+        keystone = KeystoneClient(username=username, password=password, tenant=tenant, url=url)
+        self.client = heat_client.Client(username=username, password=password, token=keystone.auth_token,
+                                         endpoint=keystone.auth_ref.service_catalog.get_urls(service_type='orchestration')[0])
+
+    def connect(self, *args, **kwds):
+        self.__init__(*args, **kwds)
+
+    def __getattr__(self, name):
+        return getattr(self.client, name)

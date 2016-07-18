@@ -465,7 +465,7 @@ class Sfi:
         if canonical in ("resources", "describe"):
             # rspec version
             # Set the KOREN type by inserting static configuration
-            parser.add_option("-r", "--rspec-version", dest="rspec_version", default="KOREN 1",
+            parser.add_option("-r", "--rspec-version", dest="rspec_version", default="KOREN 2",
                               help="schema type and version of resulting RSpec")
 #            parser.add_option("-r", "--rspec-version", dest="rspec_version", default="GENI 3",
 #                              help="schema type and version of resulting RSpec")
@@ -704,7 +704,7 @@ use this if you mean an authority instead""")
         self.private_key = client_bootstrap.private_key()
         self.my_credential_string = client_bootstrap.my_credential_string ()
         self.my_credential = {'geni_type': 'geni_sfa',
-                              'geni_version': '3', 
+                              'geni_version': '3',
                               'geni_value': self.my_credential_string}
         self.my_gid = client_bootstrap.my_gid ()
         self.client_bootstrap = client_bootstrap
@@ -1341,7 +1341,7 @@ use this if you mean an authority instead""")
         # set the requtested rspec version
         version_manager = VersionManager()
         # Set the KOREN type by inserting static configuration
-        rspec_version = version_manager._get_version('koren', 1).to_dict()
+        rspec_version = version_manager._get_version('KOREN', 2).to_dict()
 #        rspec_version = version_manager._get_version('geni', '3').to_dict()
         api_options['geni_rspec_version'] = rspec_version
 

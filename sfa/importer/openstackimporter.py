@@ -139,43 +139,47 @@ class OpenstackImporter:
         # we don't have any options for now
         self.logger.info ("OpenstackImporter.run : to do")
 
-        # create dict of all existing sfa records
-        existing_records = {}
-        existing_hrns = []
-        key_ids = []
-        for record in global_dbsession.query(RegRecord):
-            existing_records[ (record.hrn, record.type) ] = record
-            existing_hrns.append(record.hrn) 
+        # added only try and except statement to handle external user's info
+        try:
+            # create dict of all existing sfa records
+            existing_records = {}
+            existing_hrns = []
+            key_ids = []
+            for record in global_dbsession.query(RegRecord):
+                existing_records[ (record.hrn, record.type) ] = record
+                existing_hrns.append(record.hrn) 
 
-        tenants_dict = self.import_tenants(existing_hrns, existing_records)
-        users_dict, user_keys = self.import_users(existing_hrns, existing_records)
+            tenants_dict = self.import_tenants(existing_hrns, existing_records)
+            users_dict, user_keys = self.import_users(existing_hrns, existing_records)
       
-        # remove stale records    
-        system_records = [self.interface_hrn, self.root_auth, self.interface_hrn + '.slicemanager']
-        for (record_hrn, type) in existing_records.keys():
-            if record_hrn in system_records:
-                continue
-        
-            record = existing_records[(record_hrn, type)]
-            if record.peer_authority:
-                continue
-
-            if type == 'user':
-                if record_hrn in users_dict:
-                    continue  
-            elif type in['slice', 'authority']:
-                if record_hrn in tenants_dict:
+            # remove stale records    
+            system_records = [self.interface_hrn, self.root_auth, self.interface_hrn + '.slicemanager']
+            for (record_hrn, type) in existing_records.keys():
+                if record_hrn in system_records:
                     continue
-            else:
-                continue 
         
-            record_object = existing_records[ (record_hrn, type) ]
-            self.logger.info("OpenstackImporter: removing %s " % record)
-            global_dbsession.delete(record_object)
-            global_dbsession.commit()
-                                   
-        # save pub keys
-        self.logger.info('OpenstackImporter: saving current pub keys')
-        keys_filename = self.config.config_path + os.sep + 'person_keys.py'
-        save_keys(keys_filename, user_keys)                
+                record = existing_records[(record_hrn, type)]
+                if record.peer_authority:
+                    continue
+
+                if type == 'user':
+                    if record_hrn in users_dict:
+                        continue  
+                elif type in['slice', 'authority']:
+                    if record_hrn in tenants_dict:
+                        continue
+                else:
+                    continue 
         
+                record_object = existing_records[ (record_hrn, type) ]
+                self.logger.info("OpenstackImporter: removing %s " % record)
+                global_dbsession.delete(record_object)
+                global_dbsession.commit()
+
+            # save pub keys
+            self.logger.info('OpenstackImporter: saving current pub keys')
+            keys_filename = self.config.config_path + os.sep + 'person_keys.py'
+            save_keys(keys_filename, user_keys)                
+        
+        except Exception, e:
+            self.logger.error("It's caused by external user/slice : %s" % e)
