@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec  xmlns="http://www.geni.net/resources/rspec/3" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3"
+        xsi:schemaLocation="http://www.geni.net/resources/rspec/3 
+                            http://www.geni.net/resources/rspec/3/request.xsd
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3/os-hot.xsd"
+        type="request">
+
+    <openstack:node component_id="urn:publicid:IDN+fed4fire+node+openstack" 
+                    component_manager_id="urn:publicid:IDN+fed4fire+authority+am"
+                    heat_template_version="2015-04-30"
+                    name="node1">
+
+        <!-- OSNovaServer -->
+        <openstack:sliver type="OS::Nova::Server"> 
+          <openstack:OSNovaServer name="server1" flavor="m1.tiny" availability_zone="nova" image="cirros-0.3.4-x86_64-uec">
+            <openstack:networks network="network1">
+            </openstack:networks>
+            <openstack:security_groups group="default"/>
+          </openstack:OSNovaServer>  
+        </openstack:sliver>
+
+        <!-- OSNeutronNet -->
+        <openstack:sliver type="OS::Neutron::Net">
+          <openstack:OSNeutronNet name="network1">
+          </openstack:OSNeutronNet>
+        </openstack:sliver>
+
+        <!-- OSNeutronSubnet -->
+        <openstack:sliver type="OS::Neutron::Subnet">
+          <openstack:OSNeutronSubnet name="subnet1" network="network1" cidr="10.0.0.0/24" enable_dhcp="true" gateway_ip="10.0.0.1" ip_version="4">
+            <openstack:allocation_pools start="10.0.0.10" end="10.0.0.20"/>
+            <openstack:dns_nameservers server="8.8.8.8"/>
+          </openstack:OSNeutronSubnet>  
+        </openstack:sliver>
+
+        <!-- OSNeutronRouter -->
+        <openstack:sliver type="OS::Neutron::Router">
+          <openstack:OSNeutronRouter name="router1">
+            <openstack:external_gateway_info network="public"/>
+          </openstack:OSNeutronRouter>
+        </openstack:sliver>
+
+        <!-- OSNeutronRouterInterface: router interface name is required -->
+        <openstack:sliver name="router_int1" type="OS::Neutron::RouterInterface">
+           <openstack:OSNeutronRouterInterface router="router1" subnet="subnet1"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronVPNService -->
+        <!-- OSNeutronIKEPolicy -->
+        <!-- OSNeutronIPsecPolicy -->
+        <!-- OSNeutronIPsecSiteConnection -->
+        <!-- OSNeutronFirewall -->        
+        <!-- OSNeutronFirewallPolicy -->
+        <!-- OSNeutronFirewallRule -->
+        <!-- OSNeutronLBaaSLoadBalancer -->
+        <!-- OSNeutronLBaaSPool -->
+        <!-- OSNeutronLBaaSPoolMember -->
+        <!-- OSNeutronLBaaSHealthMonitor -->
+        <!-- OSNeutronFloatingIP -->
+        <!-- OSNeutronFloatingIPAssociation -->
+        <!-- OSGlanceImage -->
+
+    </openstack:node>
+</rspec>

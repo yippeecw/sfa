@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec  xmlns="http://www.geni.net/resources/rspec/3" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3"
+        xsi:schemaLocation="http://www.geni.net/resources/rspec/3
+                            http://www.geni.net/resources/rspec/3/ad.xsd 
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3/os-hot_ad.xsd"
+        type="advertisement">
+
+    <openstack:node component_id="urn:publicid:IDN+fed4fire+node+openstack" 
+                    component_manager_id="urn:publicid:IDN+fed4fire+authority+am"
+                    heat_template_version="2015-04-30">
+
+        <openstack:sliver name="string" type="token"/>
+        <openstack:sliver name="string" type="token"/> 
+
+    </openstack:node>
+
+</rspec>

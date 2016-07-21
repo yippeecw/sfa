@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec  xmlns="http://www.geni.net/resources/rspec/3" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3"
+        xsi:schemaLocation="http://www.geni.net/resources/rspec/3 
+                            http://www.geni.net/resources/rspec/3/request.xsd
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3/os-hot.xsd"
+        type="request">
+
+    <openstack:node component_id="urn:publicid:IDN+rootauth1+node+openstack" 
+                    component_manager_id="urn:publicid:IDN+rootauth1+authority+am"
+                    heat_template_version="2015-04-30"
+                    name="node1">
+
+        <!-- Not handling non-type values -->
+
+        <!-- OSNovaServer -->
+        <openstack:sliver name="server1" type="OS::Nova::Server"> 
+          <openstack:OSNovaServer name="server1" flavor="m1.tiny" admin_pass="string" availability_zone="nova" config_drive="true" diskConfig="string" flavor_update_policy="string" image="cirros-0.3.4-x86_64-uec" image_update_policy="string" key_name="string" reservation_id="string" software_config_transport="string" user_data="string" user_data_format="string" user_data_update_policy="string">
+
+            <openstack:block_device_mapping device_name="stringA" volume_id="stringA" delete_on_termination="true" volume_size="999" snapshot_id="stringA"/>
+            <openstack:block_device_mapping device_name="stringB" volume_id="stringB" delete_on_termination="true" volume_size="9999" snapshot_id="stringB"/>
+
+            <openstack:block_device_mapping_v2  swap_size="999" volume_id="stringA" delete_on_termination="true" image_id="stringA" device_type="stringA" device_name="stringA" image="stringA" boot_index="999" snapshot_id="stringA" volume_size="999" disk_bus="stringA"/>
+            <openstack:block_device_mapping_v2  swap_size="9999" volume_id="stringB" delete_on_termination="true" image_id="stringB" device_type="stringB" device_name="stringB" image="stringB" boot_index="9999" snapshot_id="stringB" volume_size="9999" disk_bus="stringB"/>
+
+            <openstack:networks subnet="string" floating_ip="string" network="private1" port="string" fixed_ip="string" uuid="string">
+              <openstack:port_extra_properties binding_vnic_type="string" admin_state_up="true" qos_policy="string" port_security_enabled="true" mac_address="string">
+                <openstack:allowed_address_pairs mac_address="string1" ip_address="string1"/>
+                <openstack:allowed_address_pairs mac_address="string2" ip_address="string2"/>
+              </openstack:port_extra_properties>
+            </openstack:networks>
+            <openstack:networks subnet="string2" floating_ip="string2" network="string2" port="string2" fixed_ip="string2" uuid="string2">
+              <openstack:port_extra_properties binding_vnic_type="string" admin_state_up="true" qos_policy="string" port_security_enabled="true" mac_address="string"> 
+                <openstack:allowed_address_pairs mac_address="string1" ip_address="string1"/>
+                <openstack:allowed_address_pairs mac_address="string2" ip_address="string2"/>
+              </openstack:port_extra_properties>
+            </openstack:networks>
+
+            <openstack:security_groups group="default"/>
+            <openstack:security_groups group="value2"/>
+
+          </openstack:OSNovaServer>  
+        </openstack:sliver>
+
+        <!-- OSNeutronNet -->
+        <openstack:sliver name="network1" type="OS::Neutron::Net">
+          <openstack:OSNeutronNet name="string" admin_state_up="true" port_security_enabled="true" qos_policy="string" shared="true" tenant_id="string">
+            <openstack:dhcp_agent_ids id="value1"/>
+            <openstack:dhcp_agent_ids id="value2"/>
+          </openstack:OSNeutronNet>
+        </openstack:sliver>
+
+        <!-- OSNeutronSubnet -->
+        <openstack:sliver name="subnet1" type="OS::Neutron::Subnet">
+          <openstack:OSNeutronSubnet name="string" network="network1" cidr="10.0.0.0/24" enable_dhcp="true" gateway_ip="10.0.0.1" ip_version="4" ipv6_address_mode="string" ipv6_ra_mode="string" prefixlen="999" subnetpool="string" tenant_id="string">
+            <openstack:allocation_pools start="10.0.0.10" end="10.0.0.20"/>
+            <openstack:allocation_pools start="stringB" end="stringB"/>
+            <openstack:dns_nameservers server="8.8.4.4"/>
+            <openstack:dns_nameservers server="8.8.8.8"/>
+            <openstack:host_routes nexthop="string1" destination="string1"/>
+            <openstack:host_routes nexthop="string2" destination="string2"/>
+          </openstack:OSNeutronSubnet>  
+        </openstack:sliver>
+
+        <!-- OSNeutronRouter -->
+        <openstack:sliver name="router1" type="OS::Neutron::Router">
+          <openstack:OSNeutronRouter name="string" admin_state_up="true" distributed="true" ha="true">
+            <openstack:external_gateway_info network="public" enable_snat="true">
+              <openstack:external_fixed_ips ip_address="stringA" subnet="stringA"/>
+              <openstack:external_fixed_ips ip_address="stringB" subnet="stringB"/>
+            </openstack:external_gateway_info>
+            <openstack:l3_agent_ids id="string1"/>
+            <openstack:l3_agent_ids id="string2"/>
+          </openstack:OSNeutronRouter>
+        </openstack:sliver>
+
+        <!-- OSNeutronRouterInterface: router interface name is required -->
+        <openstack:sliver name="router_int1" type="OS::Neutron::RouterInterface">
+           <openstack:OSNeutronRouterInterface router="router1" port="string" subnet="subnet1"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronVPNService -->
+        <openstack:sliver name="blank" type="OS::Neutron::VPNService">
+          <openstack:OSNeutronVPNService name="string" router="string" subnet="string" admin_state_up="true" description="string"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronIKEPolicy -->
+        <openstack:sliver name="blank" type="OS::Neutron::IKEPolicy">
+          <openstack:OSNeutronIKEPolicy name="string" auth_algorithm="string" description="string" encryption_algorithm="string" ike_version="string" pfs="string" phase1_negotiation_mode="string">
+            <openstack:lifetime units="string" value="999"/>
+          </openstack:OSNeutronIKEPolicy>
+        </openstack:sliver>
+
+        <!-- OSNeutronIPsecPolicy -->
+        <openstack:sliver name="blank" type="OS::Neutron::IPsecPolicy">
+          <openstack:OSNeutronIPsecPolicy name="string" auth_algorithm="string" description="string" encapsulation_mode="string" encryption_algorithm="string" pfs="string" transform_protocol="string">
+            <openstack:lifetime units="string" value="999"/>
+          </openstack:OSNeutronIPsecPolicy>
+        </openstack:sliver>
+
+        <!-- OSNeutronIPsecSiteConnection -->
+        <openstack:sliver name="blank" type="OS::Neutron::IPsecSiteConnection">
+          <openstack:OSNeutronIPsecSiteConnection name="string" ikepolicy_id="string" ipsecpolicy_id="string" peer_address="string" peer_id="string" psk="string" vpnservice_id="string" admin_state_up="string" description="string" initiator="string" mtu="999">
+            <openstack:dpd interval="999" actions="string" timeout="999"/>
+            <openstack:peer_cidrs cidr="string1"/>
+            <openstack:peer_cidrs cidr="string2"/>
+          </openstack:OSNeutronIPsecSiteConnection>
+        </openstack:sliver>
+
+        <!-- OSNeutronFirewall -->        
+        <openstack:sliver name="blank" type="OS::Neutron::Firewall">
+          <openstack:OSNeutronFirewall name="string" firewall_policy_id="string" admin_state_up="true" description="string"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronFirewallPolicy -->
+        <openstack:sliver name="blank" type="OS::Neutron::FirewallPolicy">
+          <openstack:OSNeutronFirewallPolicy name="string" audited="true" description="string" shared="true">
+            <openstack:firewall_rules rule="value1"/>
+            <openstack:firewall_rules rule="value2"/>
+          </openstack:OSNeutronFirewallPolicy>
+        </openstack:sliver>
+
+        <!-- OSNeutronFirewallRule -->
+        <openstack:sliver name="blank" type="OS::Neutron::FirewallRule">
+          <openstack:OSNeutronFirewallRule name="string" action="string" description="string" destination_ip_address="string" destination_port="string" enabled="true" ip_version="string" protocol="string" shared="true" source_ip_address="string" source_port="string"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronLBaaSLoadBalancer -->
+        <openstack:sliver name="blank" type="OS::Neutron::LBaaS::LoadBalancer">
+          <openstack:OSNeutronLBaaSLoadBalancer name="string" vip_subnet="string" admin_state_up="true" description="string" provider="string" tenant_id="string" vip_address="string"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronLBaaSPool -->
+        <openstack:sliver name="blank" type="OS::Neutron::LBaaS::Pool">
+          <openstack:OSNeutronLBaaSPool name="string" lb_algorithm="string" listener="string" protocol="string" admin_state_up="true" description="string">
+            <openstack:session_persistence type="string" cookie_name="string"/>
+          </openstack:OSNeutronLBaaSPool>
+        </openstack:sliver>
+
+        <!-- OSNeutronLBaaSPoolMember -->
+        <openstack:sliver name="blank" type="OS::Neutron::LBaaS::PoolMember">
+          <openstack:OSNeutronLBaaSPoolMember address="string" pool="string" protocol_port="999" admin_state_up="true" subnet="string" weight="999"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronLBaaSHealthMonitor -->
+        <openstack:sliver name="blank" type="OS::Neutron::LBaaS::HealthMonitor">
+          <openstack:OSNeutronLBaaSHealthMonitor delay="999" max_retries="999" pool="string" timeout="999" type="string" admin_state_up="true" expected_codes="string" http_method="string" url_path="string"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronFloatingIP -->
+        <openstack:sliver name="blank" type="OS::Neutron::FloatingIP">
+          <openstack:OSNeutronFloatingIP floating_network="string" fixed_ip_address="string" floating_ip_address="string" port_id="string"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronFloatingIPAssociation -->
+        <openstack:sliver name="blank" type="OS::Neutron::FloatingIPAssociation">
+          <openstack:OSNeutronFloatingIPAssociation floatingip_id="string" port_id="string" fixed_ip_address="string"/>
+        </openstack:sliver>
+
+        <!-- OSGlanceImage -->
+        <openstack:sliver name="blank" type="OS::Glance::Image">
+          <openstack:OSGlanceImage name="string" container_format="string" disk_format="string" location="string" id="string" is_public="true" min_disk="999" min_ram="999" protected="true">
+            <openstack:tags tag="value1"/>
+            <openstack:tags tag="value2"/>
+          </openstack:OSGlanceImage>
+        </openstack:sliver>
+
+    </openstack:node>
+
+</rspec>

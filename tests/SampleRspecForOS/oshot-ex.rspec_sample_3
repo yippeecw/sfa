@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec  xmlns="http://www.geni.net/resources/rspec/3" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3"
+        xsi:schemaLocation="http://www.geni.net/resources/rspec/3 
+                            http://www.geni.net/resources/rspec/3/request.xsd
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3
+                            http://203.255.254.100:8888/resources/sfa/rspecs/openstack/3/os-hot.xsd"
+        type="request">
+
+    <openstack:node component_id="urn:publicid:IDN+fed4fire+node+openstack" 
+                    component_manager_id="urn:publicid:IDN+fed4fire+authority+am"
+                    heat_template_version="2015-04-30"
+                    name="node3">
+
+        <!-- OSNovaServer -->
+        <!-- OSNeutronNet -->
+        <!-- OSNeutronSubnet -->
+        <!-- OSNeutronRouter -->
+        <!-- OSNeutronRouterInterface: router interface name is required -->
+        <!-- OSNeutronVPNService -->
+        <!-- OSNeutronIKEPolicy -->
+        <!-- OSNeutronIPsecPolicy -->
+        <!-- OSNeutronIPsecSiteConnection -->
+
+        <!-- OSNeutronFirewall -->
+        <openstack:sliver type="OS::Neutron::Firewall">
+          <openstack:OSNeutronFirewall name="fw1" firewall_policy_id="fw1policy1"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronFirewallPolicy -->
+        <openstack:sliver type="OS::Neutron::FirewallPolicy">
+          <openstack:OSNeutronFirewallPolicy name="fw1policy1">
+            <openstack:firewall_rules rule="fw1rule1"/>
+          </openstack:OSNeutronFirewallPolicy>
+        </openstack:sliver>
+
+        <!-- OSNeutronFirewallRule -->
+        <openstack:sliver type="OS::Neutron::FirewallRule">
+          <openstack:OSNeutronFirewallRule name="fw1rule1" action="allow" destination_port="80" protocol="tcp"/>
+        </openstack:sliver>
+
+        <!-- OSNeutronLBaaSLoadBalancer -->
+        <!-- OSNeutronLBaaSPool -->
+        <!-- OSNeutronLBaaSPoolMember -->
+        <!-- OSNeutronLBaaSHealthMonitor -->
+        <!-- OSNeutronFloatingIP -->
+        <!-- OSNeutronFloatingIPAssociation -->
+        <!-- OSGlanceImage -->
+
+    </openstack:node>
+</rspec>
